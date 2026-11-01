@@ -384,7 +384,7 @@
 const K = 7.0;          // px / cm
 const LX = 450;         // レンズのx
 const AX = 176;         // 光軸のy
-const H0 = 5.0;         // 光源の高さ(cm)（2026-10-29 3.5→5.0 小さくて見にくい）
+const H0 = 6.5;         // 光源の高さ(cm)（2026-10-29 3.5→5.0、11-01 5.0→6.5 小さくて見にくい）
 const LR = 62;          // レンズ半径(px)
 const LENS_D = 5.0;     // レンズの直径(cm) ぼけの計算用
 const A_MIN = 3, A_MAX = 60, S_MIN = 3, S_MAX = 60;
@@ -489,7 +489,7 @@ function drawSource(){
   const h = H0*K;
   g.appendChild(el('rect',{x:x-13,y:AX-h-16,width:26,height:h+16,rx:6,fill:'transparent'})); // つかみやすさ
   g.appendChild(el('rect',{x:x-9,y:AX,width:18,height:10,rx:3,fill:'#e58aa6'}));
-  g.appendChild(arrowUp(x, h, '#e0567f'));
+  g.appendChild(arrowUp(x, h, '#e0567f', 4.4));
   const t = el('text',{x:x,y:AX-h-9,'font-size':12.5,'font-weight':900,fill:'#d1567f','text-anchor':'middle'});
   t.textContent='光源'; g.appendChild(t);
 }
