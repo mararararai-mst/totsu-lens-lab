@@ -82,6 +82,27 @@
   .rayTg button[data-r="2"].on{background:var(--ray2); border-color:var(--ray2);}
   .rayTg button[data-r="3"].on{background:var(--ray3); border-color:var(--ray3);}
   .divv{width:2px; height:20px; background:var(--line); border-radius:2px; margin:0 2px;}
+  .xTg{display:flex; gap:5px; flex-wrap:wrap;}
+  .xTg button{
+    font-family:inherit; font-weight:900; font-size:.79rem; cursor:pointer;
+    border:2px solid var(--line); background:#fff; border-radius:12px; padding:6px 10px;
+    color:#615b75; transition:.15s;
+  }
+  .xTg button.on{background:var(--purple-l); border-color:var(--purple); color:#6b4fb0;}
+  .xTg button[data-x="half"].on{background:#4a4458; border-color:#4a4458; color:#fff;}
+  .why3{font-size:.8rem; line-height:1.55; background:var(--blue-l); color:#2b6a8c; border-radius:11px; padding:6px 11px; margin:0 0 8px;}
+  .why3 b{font-weight:900;}
+  .odai{display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-top:9px;
+        background:#fff; border:2px solid var(--line); border-radius:14px; padding:7px 11px;}
+  .odai .lb{font-size:.8rem; font-weight:900; color:#855a00;}
+  .odai button{
+    font-family:inherit; font-weight:900; font-size:.8rem; cursor:pointer;
+    border:2px solid #f5dfa0; background:#fff; color:#855a00; border-radius:12px; padding:6px 11px;
+  }
+  .odai button.on{background:var(--yellow); border-color:#e8c25a; color:#6b4a00;}
+  .odaiMsg{font-size:.8rem; font-weight:700; line-height:1.5; flex-basis:100%;}
+  .odaiMsg:empty{display:none;}
+  .odaiMsg b{font-weight:900;}
 
   /* ===== 光学台 ===== */
   .benchBox{background:#fffdf6; border:2px solid var(--line); border-radius:16px; padding:4px 4px 0; overflow:hidden;}
@@ -198,6 +219,15 @@
         <button data-r="3" class="on">③焦点を通る</button>
       </div>
     </div>
+    <div class="bar">
+      <span class="lb">ためしてみよう</span>
+      <div class="xTg" id="xTg">
+        <button data-x="more">＋ほかの光</button>
+        <button data-x="mid">＋途中・根元の光</button>
+        <button data-x="half">レンズの下半分をかくす</button>
+      </div>
+    </div>
+    <div class="why3" id="why3"></div>
 
     <div class="benchBox">
       <svg id="bench" viewBox="0 0 900 336" role="img" aria-label="凸レンズの光学台">
@@ -216,6 +246,8 @@
         <g id="marks2f" opacity="0"></g>
         <g id="marksF"></g>
 
+        <!-- ①②③以外の光（ほかの光・途中と根元の光） -->
+        <g id="raysX" fill="none" stroke-linecap="round"></g>
         <!-- 光線 -->
         <g id="rays" fill="none" stroke-width="2.6" stroke-linecap="round"></g>
 
@@ -227,6 +259,10 @@
           <path id="lens" d="" fill="#cfeaf8" fill-opacity=".8" stroke="#5aa8cf" stroke-width="3"/>
           <text id="lensLbl" font-size="12.5" font-weight="900" fill="#3d87ad" text-anchor="middle">凸レンズ</text>
         </g>
+        <!-- レンズの下半分のおおい -->
+        <g id="coverG"></g>
+        <!-- 途中・根元の点 -->
+        <g id="ptsG"></g>
 
         <!-- 光源 -->
         <g id="srcG" class="grab"></g>
@@ -244,6 +280,12 @@
         <div class="hd">🧻 凸レンズ ←→ スクリーン<span class="v" id="vS">30</span><span class="u">cm</span></div>
         <input type="range" id="rngS" min="3" max="60" step="0.5" value="30">
       </div>
+    </div>
+    <div class="odai" id="odai">
+      <span class="lb">🎯 お題</span>
+      <button data-g="min">一番ちっちゃい実像をつくれ</button>
+      <button data-g="max">最大の実像をつくれ</button>
+      <div class="odaiMsg" id="odaiMsg"></div>
     </div>
   </div>
 
@@ -328,6 +370,8 @@
     ・ 光源とスクリーンは、スライダーでも図の中を直接ドラッグしても動かせます。<br>
     ・ ピントが合うと 3本の光が1点に集まって、像がくっきりします。<br>
     ・ ①〜③の光の道すじは、ボタンで1本ずつ消せます。作図の練習に。<br>
+    ・ 「ためしてみよう」：①②③以外の光、矢印の途中・根元から出た光を出したり、レンズの下半分をかくしたりできます。<br>
+    ・ 🎯 お題：「一番ちっちゃい実像」「最大の実像」に挑戦。ピントを合わせた像だけが記録になります。<br>
     <span style="color:#c46a86">・ 本物の実験では、目をいためることがあるので、光源の光を直接見ないようにしよう。</span>
   </div>
   <div class="closeRow"><button class="btn help ovClose">とじる</button></div>
@@ -340,7 +384,7 @@
 const K = 7.0;          // px / cm
 const LX = 450;         // レンズのx
 const AX = 176;         // 光軸のy
-const H0 = 3.5;         // 光源の高さ(cm)
+const H0 = 5.0;         // 光源の高さ(cm)（2026-10-29 3.5→5.0 小さくて見にくい）
 const LR = 62;          // レンズ半径(px)
 const LENS_D = 5.0;     // レンズの直径(cm) ぼけの計算用
 const A_MIN = 3, A_MAX = 60, S_MIN = 3, S_MAX = 60;
@@ -349,7 +393,9 @@ const C1='#f5901f', C2='#22946a', C3='#3b83cf', CIMG='#9b5fd0';   // 光線①�
 const SAME_TOL = 0.02, SMALL_TOL = 0.85, BIG_TOL = 1.15;
 const FV_K = 150/ (H0*2.6);  // 正面ビューの px/cm （光源が枠の約1/2.6）
 
-const st = { f:10, a:30, s:30, rays:{1:true,2:true,3:true} };
+const st = { f:10, a:30, s:30, rays:{1:true,2:true,3:true}, more:false, mid:false, half:false };
+const game = { mode:null, best:null };   // お題（一番小さい／最大の実像）
+const C_MORE='#e58aa6', C_MID='#b65fa8', C_BASE='#8f7f5f';           // ほかの光・途中の光・根元の光
 const rec = { same:null, small:null, big:null, kyo:null };
 
 /* ================= 計算 ================= */
@@ -546,7 +592,9 @@ function drawRays(r){
     const F1 = {x: LX - st.f*K, y: AX};
     const slope = (F1.y - P.y)/(F1.x - P.x);
     const Ly = P.y + slope*(LX - P.x);
-    if(Math.abs(Ly-AX) < 118){
+    if(Math.abs(Ly-AX) < 118 && blocked(Ly)){   // 下半分をかくしたとき：レンズで止まる
+      g.appendChild(el('polyline',{points:`${P.x},${P.y} ${LX},${Ly}`,stroke:C3}));
+    }else if(Math.abs(Ly-AX) < 118){
       g.appendChild(el('polyline',{points:`${P.x},${P.y} ${LX},${Ly} ${xEnd},${after(Ly)}`,stroke:C3}));
       rayBadge(g, P, Ly, after(Ly), xEnd, 2, '③', C3, AV);
     }else{
@@ -562,6 +610,100 @@ function drawRays(r){
   }
 }
 
+/* ===== ①②③以外の光 ===== */
+// 下半分をかくしたとき、レンズの下半分（光軸より下）に当たる光は止まる
+function blocked(Ly){ return st.half && Ly > AX + 1; }
+// 光源の高さ k（1＝矢印の先、0.5＝途中、0＝根元）の点の像の位置
+function imgPt(r, k){
+  return (r.mode==='real') ? {x: LX + r.b*K, y: AX + H0*k*r.m*K}
+                           : {x: LX - r.b*K, y: AX - H0*k*r.m*K};
+}
+// 光源の点(Px,Py)から出て、レンズ上の高さLyを通った光の、x=xEnd での高さ
+function outY(r, Py, Ly, Qk, xEnd){
+  if(r.mode==='none') return Ly + (AX - Py)/(st.f*K)*(xEnd - LX);   // 焦点上：中心を通る光と平行
+  return Ly + (Qk.y - Ly)*(xEnd - LX)/(Qk.x - LX);
+}
+// 光源の高さkの点から、レンズ全体（上から下まで）に n 本の光を出す
+function drawFan(g, r, k, n, color, w, op){
+  const Px = LX - st.a*K, Py = AX - H0*K*k, xEnd = LX + st.s*K;
+  const Qk = r.mode==='none' ? null : imgPt(r, k);
+  for(let i=0; i<n; i++){
+    const Ly = AX - LR + 6 + (2*LR - 12)*i/(n-1);
+    if(blocked(Ly)){
+      g.appendChild(el('line',{x1:Px,y1:Py,x2:LX,y2:Ly,stroke:color,'stroke-width':w,opacity:op}));
+      continue;
+    }
+    g.appendChild(el('polyline',{points:`${Px},${Py} ${LX},${Ly} ${xEnd},${outY(r,Py,Ly,Qk,xEnd)}`,
+      stroke:color,'stroke-width':w,opacity:op}));
+    if(r.mode==='virtual')   // 虚像：逆に延長すると虚像の点に集まる
+      g.appendChild(el('line',{x1:LX,y1:Ly,x2:Qk.x,y2:Qk.y,stroke:color,'stroke-width':1.1,'stroke-dasharray':'4 5',opacity:op*.8}));
+  }
+}
+function drawExtra(r){
+  const g = $('raysX'); g.textContent='';
+  const pg = $('ptsG'); pg.textContent='';
+  if(st.more) drawFan(g, r, 1, 7, C_MORE, 1.5, .6);
+  if(st.mid){
+    drawFan(g, r, .5, 5, C_MID, 1.5, .7);
+    drawFan(g, r, 0, 5, C_BASE, 1.5, .7);
+    const Px = LX - st.a*K;
+    const dots = [[.5, C_MID, '途中'], [0, C_BASE, '根元']];
+    for(const [k, c, lb] of dots){
+      pg.appendChild(el('circle',{cx:Px, cy:AX - H0*K*k, r:4.5, fill:c, stroke:'#fff','stroke-width':1.5}));
+      const t = el('text',{x:Px-8, y:AX - H0*K*k + 4,'font-size':11,'font-weight':900,fill:c,'text-anchor':'end'});
+      t.textContent = lb; pg.appendChild(t);
+      if(r.mode!=='none'){
+        const Q = imgPt(r, k);
+        const inView = r.mode==='real' ? r.b <= S_MAX + 3 : Q.x >= 20;
+        if(inView) pg.appendChild(el('circle',{cx:Q.x, cy:Q.y, r:4.5, fill:c, stroke:'#fff','stroke-width':1.5}));
+      }
+    }
+  }
+  // レンズの下半分のおおい
+  const cg = $('coverG'); cg.textContent='';
+  if(st.half){
+    cg.appendChild(el('rect',{x:LX-15, y:AX+1, width:30, height:100, rx:5, fill:'#4a4458', opacity:.92}));
+    ['か','く','し','た'].forEach((ch,i)=>{
+      const t = el('text',{x:LX, y:AX+27+i*17,'font-size':12.5,'font-weight':900,fill:'#fff','text-anchor':'middle'});
+      t.textContent = ch; cg.appendChild(t);
+    });
+  }
+}
+function why3(r){
+  let s = '①②③は、<b>角度を計算しなくても、進む道すじが分かっている光</b>。だから作図にはこの3本を使う。';
+  if(st.more || st.mid){
+    s = (r.mode==='none')
+      ? '光源が焦点の上にあると、どの光もレンズを通ったあと<b>平行</b>に進み、1点に集まらない。'
+      : (r.mode==='virtual'
+        ? 'どの光も広がっていくが、<b>逆にのばすと</b>①②③と同じ1点に集まる。'
+        : 'ほかの光も、①②③と同じ1点に集まる。') +
+        (st.mid ? '<br>矢印の<b>途中</b>や<b>根元</b>から出た光も、像の途中・根元に集まる。作図では<b>省略しているだけ</b>で、本当は出ている。'
+                : '<br>①②③は、その中で<b>道すじが分かっている</b>3本。');
+  }
+  $('why3').innerHTML = s;
+}
+
+/* ===== お題 ===== */
+function odai(r){
+  const msg = $('odaiMsg');
+  if(!game.mode){ msg.textContent=''; return; }
+  if(r.mode==='real' && r.focused){
+    const cur = {m:r.m, a:st.a, b:r.b};
+    if(!game.best || (game.mode==='min' ? cur.m < game.best.m - 1e-9 : cur.m > game.best.m + 1e-9)) game.best = cur;
+  }
+  const lim = game.mode==='min' ? st.f/(A_MAX - st.f) : (S_MAX - st.f)/st.f;   // 光学台の長さでの限界
+  if(!game.best){ msg.innerHTML = 'スクリーンにピントを合わせると、記録が出るよ。'; return; }
+  const b = game.best;
+  const fmt = v => v.toFixed(1).replace(/\.0$/,'');
+  let s = `いちばんの記録：光源の<b>${b.m < 1 ? b.m.toFixed(2) : b.m.toFixed(1)}倍</b>（光源 ${fmt(b.a)}cm／スクリーン ${fmt(b.b)}cm）`;
+  const done = game.mode==='min' ? b.m <= lim*1.03 : b.m >= lim*0.97;
+  if(done) s += '<br>🏆 <b>この光学台でできる限界！</b>' +
+    (game.mode==='min' ? '光源をレンズから<b>いちばん遠く</b>にすると、像はいちばん小さくなる。'
+                       : '光源を<b>焦点に近づける</b>ほど像は大きくなるが、像がレンズから遠くなる。スクリーンが光学台の<b>はし</b>まで来たら、それが限界。');
+  else s += (game.mode==='min' ? '　もっと小さくできるかな？' : '　もっと大きくできるかな？');
+  msg.innerHTML = s;
+}
+
 function drawImage(r){
   const g = $('imgG'); g.textContent='';
   if(r.mode==='none') return;
@@ -574,7 +716,7 @@ function drawImage(r){
     const hPx = clamp(H0*r.m*K, 6, 150);
     const x = LX + r.b*K;
     const grp = arrowDown(x, hPx, CIMG, !r.focused);
-    grp.setAttribute('opacity', r.focused ? 1 : .5);
+    grp.setAttribute('opacity', (r.focused ? 1 : .5) * (st.half ? .5 : 1));   // 下半分をかくすと暗くなる
     g.appendChild(grp);
     const t = el('text',{x:x+10,y:AX+hPx/2+5,'font-size':12,'font-weight':900,fill:'#8a55c0','text-anchor':'start'});
     t.textContent='実像'; g.appendChild(t);
@@ -583,7 +725,7 @@ function drawImage(r){
     const x = LX - r.b*K;
     if(x < 20) return;
     const grp = arrowUp(x, hPx, CIMG, 3.4);
-    grp.setAttribute('opacity', .85);
+    grp.setAttribute('opacity', st.half ? .45 : .85);
     grp.querySelector('line').setAttribute('stroke-dasharray','7 5');
     g.appendChild(grp);
     const t = el('text',{x:x-10,y:AX-hPx/2,'font-size':12,'font-weight':900,fill:'#8a55c0','text-anchor':'end'});
@@ -621,7 +763,7 @@ function drawFront(r){
     back.setAttribute('fill','#3a3346');
     back.setAttribute('stroke','#a58bdd');
     const mm = Math.min(r.m, 8);
-    imgG.appendChild(el('path',{d:fPath(),fill:'#ffd6e5',transform:`scale(${(sc*mm).toFixed(3)})`}));
+    imgG.appendChild(el('path',{d:fPath(),fill:'#ffd6e5',opacity:st.half?.5:1,transform:`scale(${(sc*mm).toFixed(3)})`}));
     $('blurNode').setAttribute('stdDeviation', 0);
     if(r.m > FV_MAX) setNote('大きすぎて全部は見えない', '#8a55c0');
   }else if(r.mode==='none'){
@@ -635,7 +777,7 @@ function drawFront(r){
     const mm = Math.min(r.m, 8);
     const blurPx = clamp(r.circle*FV_K/2.5, 0, 26);
     $('blurNode').setAttribute('stdDeviation', blurPx.toFixed(2));
-    const op = clamp(1 - blurPx/30, .18, 1);
+    const op = clamp(1 - blurPx/30, .18, 1) * (st.half ? .5 : 1);
     imgG.appendChild(el('path',{d:fPath(),fill:'#f5901f',opacity:op.toFixed(2),
       transform:`rotate(180) scale(${(sc*mm).toFixed(3)})`}));
     if(r.m > FV_MAX) setNote('スクリーンからはみ出した', '#c46a86');
@@ -644,6 +786,11 @@ function drawFront(r){
 
 /* ================= 判定文 ================= */
 function verdict(r){
+  verdictBody(r);
+  if(st.half && r.mode!=='none')
+    $('verdict').innerHTML += '<br><span style="color:#4a4458">✋ 下半分をかくしても、像の<b>形・大きさ・位置は同じ</b>。通る光が半分になるので<b>暗くなる</b>。</span>';
+}
+function verdictBody(r){
   const v = $('verdict');
   if(r.mode==='none'){
     v.innerHTML = '<b class="ng">像ができない</b><br>光源が焦点の上にあるので、凸レンズを通った光は<b>たがいに平行</b>になって進む。どこにも集まらないので、実像も虚像もできない。';
@@ -743,7 +890,7 @@ function toast(msg){
 /* ================= 更新 ================= */
 function update(record){
   const r = calc();
-  drawMarks(); drawLens(); drawRays(r); drawImage(r); drawSource(); drawScreen(r); drawFront(r); verdict(r);
+  drawMarks(); drawLens(); drawRays(r); drawExtra(r); drawImage(r); drawSource(); drawScreen(r); drawFront(r); verdict(r); why3(r); odai(r);
   $('vA').textContent = st.a.toFixed(1).replace(/\.0$/,'');
   $('vS').textContent = st.s.toFixed(1).replace(/\.0$/,'');
   if(record !== false) tryRecord(r);
@@ -758,6 +905,7 @@ $('segF').addEventListener('click', e=>{
   [...$('segF').children].forEach(x=>x.classList.remove('on'));
   b.classList.add('on');
   st.f = +b.dataset.f;
+  game.best = null;
   rec.same = rec.small = rec.big = rec.kyo = null;
   $('found').classList.remove('show');
   $('marks2f').setAttribute('opacity','0');
@@ -771,6 +919,23 @@ $('rayTg').addEventListener('click', e=>{
   const n = b.dataset.r;
   st.rays[n] = !st.rays[n];
   b.classList.toggle('on', st.rays[n]);
+  update(false);
+});
+
+$('xTg').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  const x = b.dataset.x;
+  st[x] = !st[x];
+  b.classList.toggle('on', st[x]);
+  update(false);
+});
+
+$('odai').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  const g = b.dataset.g;
+  game.mode = (game.mode===g) ? null : g;   // もう一度押すとやめる
+  game.best = null;
+  [...$('odai').querySelectorAll('button')].forEach(x=>x.classList.toggle('on', x.dataset.g===game.mode));
   update(false);
 });
 
